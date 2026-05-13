@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORION SOC — Operations Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0e;
+    --panel: #0d1e2e;
+    --border: #1a3a52;
+    --accent: #00d4ff;
+    --accent3: #39ff14;
+    --warn: #ffcc00;
+    --red: #ff3a3a;
+    --text: #c8dce8;
+    --muted: #4a6a7a;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Rajdhani', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--mono); min-height: 100vh; overflow-x: hidden;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(57,255,20,0.03) 0%, transparent 50%);
+  }
+  body::before {
+    content: ''; position: fixed; top:0;left:0;right:0;bottom:0;
+    background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
+    pointer-events: none; z-index: 999;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 1px solid var(--border);
+    background: rgba(13,30,46,0.8); backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo-box {
+    width:40px;height:40px;border:2px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    animation:pulse-border 3s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%,100%{border-color:var(--accent);box-shadow:0 0 8px rgba(0,212,255,0.3);}
+    50%{border-color:var(--accent3);box-shadow:0 0 16px rgba(57,255,20,0.4);}
+  }
+  .logo-box::after{content:'⬡';color:var(--accent);font-size:20px;}
+  .header-title{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;}
+  .header-title span{color:var(--text);font-weight:400;}
+  .header-right{display:flex;align-items:center;gap:20px;font-size:11px;color:var(--muted);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent3);box-shadow:0 0 8px var(--accent3);animation:blink 2s ease-in-out infinite;display:inline-block;margin-right:6px;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  #clock{font-size:13px;color:var(--accent);letter-spacing:2px;}
+  .main{padding:28px 32px;max-width:1400px;margin:0 auto;}
+  .section-label{font-family:var(--display);font-size:11px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+  .grid{display:grid;gap:12px;margin-bottom:28px;}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .tool-card{background:var(--panel);border:1px solid var(--border);padding:16px 18px;text-decoration:none;display:block;transition:all 0.2s ease;position:relative;overflow:hidden;cursor:pointer;}
+  .tool-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--card-accent,var(--accent));transition:width 0.2s ease;}
+  .tool-card:hover{background:rgba(0,212,255,0.05);border-color:var(--card-accent,var(--accent));transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,212,255,0.1);}
+  .tool-card:hover::before{width:5px;}
+  .card-tag{font-size:9px;letter-spacing:3px;color:var(--card-accent,var(--accent));text-transform:uppercase;margin-bottom:6px;font-family:var(--display);}
+  .card-name{font-family:var(--display);font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;margin-bottom:4px;}
+  .card-ip{font-size:11px;color:var(--muted);letter-spacing:1px;}
+  .card-status{position:absolute;top:14px;right:14px;font-size:9px;letter-spacing:2px;padding:3px 8px;border:1px solid;font-family:var(--display);font-weight:600;}
+  .status-live{color:var(--accent3);border-color:var(--accent3);background:rgba(57,255,20,0.06);}
+  .status-tunnel{color:var(--warn);border-color:var(--warn);background:rgba(255,204,0,0.06);}
+  .status-local{color:var(--accent);border-color:var(--accent);background:rgba(0,212,255,0.06);}
+  .status-attack{color:var(--red);border-color:var(--red);background:rgba(255,58,58,0.06);}
+  .status-passive{color:var(--muted);border-color:var(--muted);background:transparent;}
+  .ip-table{background:var(--panel);border:1px solid var(--border);padding:20px;margin-bottom:28px;}
+  .ip-row{display:grid;grid-template-columns:200px 220px 1fr;gap:16px;padding:8px 0;border-bottom:1px solid rgba(26,58,82,0.5);font-size:12px;align-items:center;}
+  .ip-row:last-child{border-bottom:none;}
+  .ip-row-header{font-family:var(--display);font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+  .ip-name{color:#fff;font-family:var(--display);font-weight:600;font-size:13px;}
+  .ip-addr{color:var(--accent);letter-spacing:1px;}
+  .ip-desc{color:var(--muted);}
+  .note-box{background:rgba(255,204,0,0.04);border:1px solid rgba(255,204,0,0.2);border-left:3px solid var(--warn);padding:12px 16px;font-size:11px;color:var(--warn);margin-bottom:28px;letter-spacing:0.5px;line-height:2;}
+  .note-box strong{color:#fff;}
+  @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3,.grid-2{grid-template-columns:1fr;}.header{padding:14px 16px;}.main{padding:20px 16px;}}
+  @media(max-width:600px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box"></div>
+    <div><div class="header-title">ORION <span>/ SOC Operations Center</span></div></div>
+  </div>
+  <div class="header-right">
+    <div><span class="status-dot"></span>STACK ONLINE</div>
+    <div id="clock">--:--:--</div>
+    <div>rich_keyzceo@soc-blueteam</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="note-box">
+    ⚠ <strong>GCP EXTERNAL IP CHANGES ON RESTART</strong> — Use Tailscale IP <strong>100.98.249.86</strong> for stable access from any Tailscale device.<br>
+    ⚠ <strong>NESSUS</strong> — SSH tunnel required: <strong>ssh -L 8834:localhost:8834 rich_keyzceo@100.98.249.86</strong> → then open https://localhost:8834<br>
+    ⚠ <strong>SHARING</strong> — Add your device to Tailscale tailnet <strong>rorrcyber.github</strong> to access all tools via the links below.
+  </div>
+
+  <div class="section-label">GCP — soc-blueteam — Tailscale 100.98.249.86 — us-east1-c</div>
+  <div class="grid grid-4">
+    <a class="tool-card" href="https://100.98.249.86:443" target="_blank" style="--card-accent:#00d4ff;">
+      <span class="card-status status-live">LIVE</span>
+      <div class="card-tag">SIEM / Detection</div>
+      <div class="card-name">Wazuh</div>
+      <div class="card-ip">100.98.249.86:443 — HTTPS</div>
+    </a>
+    <a class="tool-card" href="http://100.98.249.86:9000" target="_blank" style="--card-accent:#ff6b35;">
+      <span class="card-status status-live">LIVE</span>
+      <div class="card-tag">Case Management</div>
+      <div class="card-name">TheHive</div>
+      <div class="card-ip">100.98.249.86:9000 — HTTP</div>
+    </a>
+    <a class="tool-card" href="http://100.98.249.86:5678" target="_blank" style="--card-accent:#39ff14;">
+      <span class="card-status status-live">LIVE</span>
+      <div class="card-tag">SOAR / Automation</div>
+      <div class="card-name">n8n</div>
+      <div class="card-ip">100.98.249.86:5678 — HTTP</div>
+    </a>
+    <a class="tool-card" href="http://100.98.249.86:8889" target="_blank" style="--card-accent:#bf5fff;">
+      <span class="card-status status-live">LIVE</span>
+      <div class="card-tag">DFIR / Hunt</div>
+      <div class="card-name">Velociraptor</div>
+      <div class="card-ip">100.98.249.86:8889 — HTTP</div>
+    </a>
+  </div>
+
+  <div class="grid grid-3">
+    <a class="tool-card" href="https://localhost:8834" target="_blank" style="--card-accent:#ffcc00;">
+      <span class="card-status status-tunnel">SSH TUNNEL</span>
+      <div class="card-tag">Vulnerability Scanning</div>
+      <div class="card-name">Nessus Essentials</div>
+      <div class="card-ip">localhost:8834 — Tunnel first</div>
+    </a>
+    <div class="tool-card" style="--card-accent:#00d4ff;cursor:default;">
+      <span class="card-status status-passive">PASSIVE</span>
+      <div class="card-tag">IDS / Packet Inspection</div>
+      <div class="card-name">Snort</div>
+      <div class="card-ip">Native ens4 — /var/log/snort/alert</div>
+    </div>
+    <div class="tool-card" style="--card-accent:#00d4ff;cursor:default;">
+      <span class="card-status status-passive">PASSIVE</span>
+      <div class="card-tag">Network Analysis</div>
+      <div class="card-name">Zeek</div>
+      <div class="card-ip">Native ens4 — /opt/zeek/logs/current/</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <a class="tool-card" href="https://console.cloud.google.com/compute/instances?project=project-07215fdb-7ba4-46f2-8a0" target="_blank" style="--card-accent:#4285f4;">
+      <span class="card-status status-live">CONSOLE</span>
+      <div class="card-tag">GCP Control Plane</div>
+      <div class="card-name">GCP Console</div>
+      <div class="card-ip">START / STOP soc-blueteam — ~$65-75/mo</div>
+    </a>
+    <a class="tool-card" href="https://login.tailscale.com/admin/machines" target="_blank" style="--card-accent:#4b5eff;">
+      <span class="card-status status-live">TAILNET</span>
+      <div class="card-tag">Secure Tunnel / Access</div>
+      <div class="card-name">Tailscale Admin</div>
+      <div class="card-ip">rorrcyber.github — Add devices here</div>
+    </a>
+  </div>
+
+  <div class="section-label">Local — Zenbook / win1 — 192.168.153.1</div>
+  <div class="grid grid-3">
+    <a class="tool-card" href="http://192.168.153.1:8000" target="_blank" style="--card-accent:#ff6b35;">
+      <span class="card-status status-local">LOCAL</span>
+      <div class="card-tag">Log Analysis</div>
+      <div class="card-name">Splunk</div>
+      <div class="card-ip">192.168.153.1:8000 — index=win</div>
+    </a>
+    <div class="tool-card" style="--card-accent:#ff3a3a;cursor:default;">
+      <span class="card-status status-attack">ATTACK</span>
+      <div class="card-tag">Red Team / Kali VM</div>
+      <div class="card-name">Kali Linux</div>
+      <div class="card-ip">192.168.153.128 — Metasploit / Meterpreter</div>
+    </div>
+    <div class="tool-card" style="--card-accent:#4a6a7a;cursor:default;">
+      <span class="card-status status-passive">PASSIVE</span>
+      <div class="card-tag">Firewall / Gateway</div>
+      <div class="card-name">pfSense</div>
+      <div class="card-ip">192.168.153.x — Gateway / NAT</div>
+    </div>
+  </div>
+
+  <div class="section-label">Quick Reference — Full Stack IP Table</div>
+  <div class="ip-table">
+    <div class="ip-row ip-row-header"><div>HOST</div><div>IP / PORT</div><div>ROLE</div></div>
+    <div class="ip-row"><div class="ip-name">soc-blueteam (GCP)</div><div class="ip-addr">Tailscale: 100.98.249.86</div><div class="ip-desc">Blue team server — Wazuh, TheHive, n8n, Velociraptor, Nessus, Snort, Zeek</div></div>
+    <div class="ip-row"><div class="ip-name">Wazuh Dashboard</div><div class="ip-addr">100.98.249.86:443</div><div class="ip-desc">HTTPS — SIEM dashboard</div></div>
+    <div class="ip-row"><div class="ip-name">Wazuh Manager</div><div class="ip-addr">100.98.249.86:1514-1515</div><div class="ip-desc">Agent enrollment / event ingestion</div></div>
+    <div class="ip-row"><div class="ip-name">TheHive</div><div class="ip-addr">100.98.249.86:9000</div><div class="ip-desc">Case & alert management — richard@soc.local — Org: SOC</div></div>
+    <div class="ip-row"><div class="ip-name">n8n</div><div class="ip-addr">100.98.249.86:5678</div><div class="ip-desc">SOAR — Wazuh webhook → route → TheHive</div></div>
+    <div class="ip-row"><div class="ip-name">Velociraptor</div><div class="ip-addr">100.98.249.86:8889</div><div class="ip-desc">DFIR — Pslist baseline / hunt</div></div>
+    <div class="ip-row"><div class="ip-name">Nessus Essentials</div><div class="ip-addr">localhost:8834 (SSH tunnel)</div><div class="ip-desc">ssh -L 8834:localhost:8834 rich_keyzceo@100.98.249.86</div></div>
+    <div class="ip-row"><div class="ip-name">Snort</div><div class="ip-addr">Native — ens4</div><div class="ip-desc">IDS alerts → /var/log/snort/alert — n8n rule.id 100500</div></div>
+    <div class="ip-row"><div class="ip-name">Zeek</div><div class="ip-addr">Native — ens4</div><div class="ip-desc">Network logs → /opt/zeek/logs/current/ — conn.log, dns.log, http.log</div></div>
+    <div class="ip-row"><div class="ip-name">win1 / CHEF</div><div class="ip-addr">192.168.153.1 / TS: 100.75.62.3</div><div class="ip-desc">Wazuh Agent 001 — Splunk Enterprise — target endpoint</div></div>
+    <div class="ip-row"><div class="ip-name">Splunk Enterprise</div><div class="ip-addr">192.168.153.1:8000</div><div class="ip-desc">Local — index=win — Security/System/Sysmon</div></div>
+    <div class="ip-row"><div class="ip-name">Kali Linux</div><div class="ip-addr">192.168.153.128</div><div class="ip-desc">Attack machine — Metasploit LHOST for payloads</div></div>
+  </div>
+
+</div>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-US', { hour12: false }) + ' ' +
+      Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+</script>
+</body>
+</html>
